@@ -1,29 +1,37 @@
-from php:8.2-cli
-RUN apt -get update && apt-get install -y \
-  git \
-  curl \
-  unzip \
-  zip \
-  libpng-dev \
-  libonig-dev \
-  libxml2-dev \
-  libzip-dev \
-  libsodium-dev \
-  libpng-dev \
-  default-mysql-client \
-  default-libmysqlclient-dev \
-  libfreetype6-dev \
-  libjpeg62-turbo-dev \
-  && docker-php-ext-configure gd --with-freetype --with-jpeg \
-  && docker-php-ext-install pdo_pgsql pdo_mysql mbstring exif pcntl bcmath gd zip sodium 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+FROM php:8.2-fpm
 
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -&&\
-    apt-get update && apt-get install -y nodejs
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    curl \
+    libpq-dev \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
 WORKDIR /var/www/html
+
+# Copy all files
 COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# Generate optimized Laravel cache
+RUN php artisan config:clear
+RUN php artisan route:clear
+RUN php artisan view:clear
+
+# Expose port for PHP server
 EXPOSE 8000
 
-RUN composer install
-RUN npm install
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080
+# Start Laravel using PHP's server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
