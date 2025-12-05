@@ -25,13 +25,18 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Generate optimized Laravel cache
+# Create .env and generate key automatically
+RUN cp .env.example .env || true
+RUN php artisan key:generate
+RUN php artisan storage:link
+
+# Clear caches
 RUN php artisan config:clear
 RUN php artisan route:clear
 RUN php artisan view:clear
 
-# Expose port for PHP server
+# Expose the port
 EXPOSE 8000
 
-# Start Laravel using PHP's server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Start Laravel using Railway's PORT variable
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT}"]
