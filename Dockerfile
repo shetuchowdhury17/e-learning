@@ -44,4 +44,5 @@ EXPOSE 8000
 # FINAL FIX:
 # Use PHP's built-in web server instead of Artisan Serve
 # This ALWAYS works and avoids the port bug completely.
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8000} -t public"]
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+
